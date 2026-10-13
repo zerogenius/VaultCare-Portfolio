@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vaultcare}
+      POSTGRES_USER: ${POSTGRES_USER:-vaultcare}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-LocalOnly_ChangeThis_123!}
+    ports: ["5432:5432"]
+    volumes: ["vaultcare_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vaultcare} -d ${POSTGRES_DB:-vaultcare}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  api:
+    build: ./backend/VaultCare.Api
+    environment:
+      ConnectionStrings__VaultCare: Host=postgres;Port=5432;Database=${POSTGRES_DB:-vaultcare};Username=${POSTGRES_USER:-vaultcare};Password=${POSTGRES_PASSWORD:-LocalOnly_ChangeThis_123!}
+      REDIS_CONNECTION: redis:6379
+      VAULTCARE_JWT_KEY: ${VAULTCARE_JWT_KEY:-replace-this-with-a-random-secret-key-at-least-32-characters}
+      VAULTCARE_ENCRYPTION_KEY: ${VAULTCARE_ENCRYPTION_KEY:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@vaultcare.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-ChangeMe123!}
+      ASPNETCORE_URLS: http://+:8080
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+  frontend:
+    build: ./frontend/vaultcare-ui
+    ports: ["5173:80"]
+    depends_on: [api]
+volumes:
+  vaultcare_pg:

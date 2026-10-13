@@ -1,0 +1,25 @@
+name: VaultCare CI
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - run: dotnet restore backend/VaultCare.Api/VaultCare.Api.csproj
+      - run: dotnet build backend/VaultCare.Api/VaultCare.Api.csproj --configuration Release
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'npm', cache-dependency-path: frontend/vaultcare-ui/package-lock.json }
+      - run: npm install
+        working-directory: frontend/vaultcare-ui
+      - run: npm run build
+        working-directory: frontend/vaultcare-ui
